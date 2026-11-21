@@ -103,9 +103,10 @@ export function buildSession({ mode = 'train', subjectId = 'mathe', topicId, ski
   const counts = {};
   const now = Date.now();
   while (items.length < ROUND && pool.length) {
-    const weights = pool.map(({ skill }) => {
+    const weights = pool.map(({ skill, topic }) => {
       const s = stat(skill.id);
       let w = 1 + (100 - s.m) / 25;
+      if (topic.current && mode === 'train') w *= 2.5;
       if (s.n === 0) w += 1.5;
       if (isGap(skill.id)) w *= 2.2;
       if (now - s.last < 3 * 60e3) w *= 0.5;

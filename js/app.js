@@ -84,6 +84,12 @@ function greeting() {
   return h < 11 ? 'Guten Morgen' : h < 17 ? 'Hallo' : 'Guten Abend';
 }
 
+function currentCard() {
+  const cur = SUBJECTS.mathe.topics.filter(t => t.current);
+  if (!cur.length) return '';
+  return `<section class="card"><div class="eyebrow">⭐ Aktueller Stoff aus deinem Hefter</div>${cur.map(t => { const tm = E.topicMastery(t); return `<button class="skill-row" data-topicq="${t.id}"><span>${t.icon} ${esc(t.name)}</span><span class="pill" style="background:${tm.tried ? barColor(tm.m) : 'var(--accent2)'}">${tm.tried ? tm.m + ' %' : 'neu'}</span></button>`; }).join('')}</section>`;
+}
+
 function renderHome() {
   const s = E.S, r = E.rankInfo(), st = E.streak(), today = E.todayStats();
   const tests = E.upcomingTests();
@@ -120,6 +126,7 @@ function renderHome() {
 
     ${testCards || `<section class="card test empty"><b>📅 Wann ist der nächste Mathetest?</b><p class="small muted">Trag ihn ein – dann weiß ich, wie viele Tage wir noch haben, und plane dein Training.</p><button class="btn" data-go="test">Test eintragen</button></section>`}
 
+    ${currentCard()}
     <button class="btn primary big" id="train">Training starten ▶︎<small>8 Aufgaben · passt sich dir an</small></button>
     ${s.review.length ? `<button class="btn soft" id="review">🔁 Fehler wiederholen <span class="badge">${s.review.length}</span></button>` : ''}
 
@@ -145,6 +152,7 @@ function renderHome() {
   if ($('#review')) $('#review').onclick = () => startQuiz({ mode: 'review' });
   $$('[data-test]').forEach(b => b.onclick = () => startQuiz({ mode: 'test', testId: b.dataset.test }));
   $$('[data-skill]').forEach(b => b.onclick = () => startQuiz({ mode: 'skill', skillId: b.dataset.skill }));
+  $$('[data-topicq]').forEach(b => b.onclick = () => go('topic', { topicId: b.dataset.topicq }));
   $$('[data-grade]').forEach(b => b.onclick = () => { past.grade = +b.dataset.grade; E.save(); toast(past.grade <= 2 ? 'Wow, super! 🎉🐱' : 'Danke! Weiter geht’s – wir schaffen das. 💪'); render(); });
   if ($('[data-gradeskip]')) $('[data-gradeskip]').onclick = () => { past.skipGrade = true; E.save(); render(); };
 }
@@ -154,7 +162,7 @@ function renderTopics() {
   const sub = SUBJECTS.mathe;
   app().innerHTML = `<main><h1>${sub.icon} ${sub.name}</h1><p class="muted">Wähle ein Thema. Die Balken zeigen, wie sicher du schon bist.</p>
     ${sub.topics.map(t => { const tm = E.topicMastery(t); return `<button class="card topic" data-topic="${t.id}">
-      <span class="t-ic">${t.icon}</span><span class="t-main"><b>${esc(t.name)}</b><span class="bar"><i style="width:${tm.m}%;background:${barColor(tm.m)}"></i></span>
+      <span class="t-ic">${t.icon}</span><span class="t-main"><b>${esc(t.name)}</b>${t.current ? ' <span class="tag">⭐ aktuell</span>' : ''}<span class="bar"><i style="width:${tm.m}%;background:${barColor(tm.m)}"></i></span>
       <small class="muted">${tm.tried ? `${tm.m} % · ${tm.tried}/${tm.total} Fertigkeiten geübt` : 'noch nicht geübt'}</small></span><span class="chev">›</span></button>`; }).join('')}
   </main>${nav()}`;
   $$('[data-topic]').forEach(b => b.onclick = () => go('topic', { topicId: b.dataset.topic }));
@@ -206,6 +214,20 @@ function graphSVG({ mn, md, n }) {
   </svg>`;
 }
 
+function treeSVG(t) {
+  const f = ([n, d]) => { const g = (a, b) => (b ? g(b, a % b) : a); const k = g(n, d); return `${n / k}/${d / k}`; };
+  const c = ([n, d]) => [d - n, d];
+  const L = (x1, y1, x2, y2, lab, up) => `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" class="axis"/><text x="${(x1 + x2) / 2}" y="${(y1 + y2) / 2 + (up ? -7 : 15)}" class="tlab">${lab}</text>`;
+  const N = (x, y, txt) => `<circle cx="${x}" cy="${y}" r="17" class="node"/><text x="${x}" y="${y + 4}" class="tnode">${txt}</text>`;
+  const a = t.a, b = t.b;
+  return `<svg class="graph tree" viewBox="0 0 330 220" role="img" aria-label="Baumdiagramm">
+    ${L(20, 110, 128, 55, f(t.p), true)}${L(20, 110, 128, 165, f(c(t.p)), false)}
+    ${L(147, 55, 283, 25, f(t.q[0]), true)}${L(147, 55, 283, 85, f(c(t.q[0])), false)}
+    ${L(147, 165, 283, 135, f(t.q[1]), true)}${L(147, 165, 283, 195, f(c(t.q[1])), false)}
+    ${N(130, 55, a)}${N(130, 165, b)}${N(300, 25, a)}${N(300, 85, b)}${N(300, 135, a)}${N(300, 195, b)}
+  </svg>`;
+}
+
 function currentSpec() {
   const q = quiz.items[quiz.i].q;
   return q.answer.type === 'steps' ? q.steps[quiz.stepIdx] : { answer: q.answer, text: null };
@@ -214,7 +236,8 @@ function currentSpec() {
 function inputHTML(spec) {
   const a = spec.answer;
   const isTerm = a.type === 'term';
-  const keys = isTerm ? ['x', 'x²', '(', ')', '+', '−', '·', '/'] : ['/', '−', ',', '+', '(', ')'];
+  const vs = isTerm ? [...new Set(String(a.value).replace(/[^a-z]/g, ''))].sort() : [];
+  const keys = isTerm ? [...vs, '²', '³', '^', '(', ')', '+', '−', '/', ','] : ['/', '−', ',', '+', '(', ')', ...(a.prob || a.tol ? ['%'] : [])];
   const kb = `<div class="keys">${keys.map(k => `<button type="button" class="key" data-key="${k}">${k}</button>`).join('')}<button type="button" class="key" data-key="⌫">⌫</button></div>`;
   if (a.type === 'pair') {
     return `<div class="pair">${a.fields.map((f, i) => `<label><span>${esc(f.label)} =</span><input class="ans" data-i="${i}" inputmode="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"></label>`).join('')}</div>${kb}`;
@@ -246,6 +269,7 @@ function renderQuiz() {
       <p class="qtext">${esc(q.text)}</p>
       ${q.math ? `<div class="math">${M(q.math)}</div>` : ''}
       ${q.graph ? graphSVG(q.graph) : ''}
+      ${q.tree ? treeSVG(q.tree) : ''}
       ${stepsDone}
       ${quiz.phase === 'answer' ? `
         ${isSteps ? `<div class="step now"><div class="small"><b>${esc(cur.text)}</b></div></div>` : ''}
@@ -295,7 +319,7 @@ function bindAnswer(cur) {
       const inp = last, key = k.dataset.key;
       const s = inp.selectionStart ?? inp.value.length, e2 = inp.selectionEnd ?? s;
       if (key === '⌫') { const a = s === e2 ? Math.max(0, s - 1) : s; inp.value = inp.value.slice(0, a) + inp.value.slice(e2); inp.setSelectionRange(a, a); }
-      else { const ins = key === 'x²' ? 'x²' : key; inp.value = inp.value.slice(0, s) + ins + inp.value.slice(e2); inp.setSelectionRange(s + ins.length, s + ins.length); }
+      else { const ins = key; inp.value = inp.value.slice(0, s) + ins + inp.value.slice(e2); inp.setSelectionRange(s + ins.length, s + ins.length); }
       inp.dispatchEvent(new Event('input'));
     };
   });
@@ -499,7 +523,7 @@ function renderMore() {
       <ol class="small"><li>Diese Seite in <b>Safari</b> öffnen</li><li>Unten (iPhone) bzw. oben (iPad) auf <b>Teilen</b> ⬆️ tippen</li><li><b>„Zum Home-Bildschirm“</b> wählen</li></ol>
       <p class="small muted">Tipp fürs iPad: Mit dem Apple Pencil kannst du direkt ins Antwortfeld schreiben (Scribble) und im ✏️ Notizblock rechnen.</p></section>
     <section class="card"><button class="btn danger" id="reset">Alles zurücksetzen</button></section>
-    <p class="tiny muted center">Lernpfote · Version 1.0</p>
+    <p class="tiny muted center">Lernpfote · Version 1.1</p>
   </main>${nav()}`;
   $('#addtest').onclick = () => go('test', { back: 'more' });
   $$('[data-edit]').forEach(b => b.onclick = () => go('test', { edit: b.dataset.edit, back: 'more' }));

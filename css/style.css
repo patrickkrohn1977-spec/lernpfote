@@ -100,6 +100,7 @@ textarea { min-height: 160px; font-size: .8rem; margin-top: 10px; }
 sup { font-size: .65em; }
 .graph { display: block; width: 100%; max-width: 340px; margin: 6px auto; }
 .graph .grid { stroke: var(--line); stroke-width: 1; } .graph .axis { stroke: var(--muted); stroke-width: 1.6; }
+.tree .node { fill: var(--card); stroke: var(--accent2); stroke-width: 2; } .tree .tnode { fill: var(--ink); font-size: 10px; text-anchor: middle; font-weight: 700; } .tree .tlab { fill: var(--accent); font-size: 13px; text-anchor: middle; font-weight: 700; }
 .graph .fn { stroke: var(--accent); stroke-width: 3; } .graph .pt { fill: var(--accent2); } .graph .lab { fill: var(--muted); font-size: 10px; text-anchor: middle; }
 .ans-wrap input, .pair input { font-size: 1.4rem; text-align: center; padding: 14px; font-weight: 600; }
 .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }

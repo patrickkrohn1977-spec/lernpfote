@@ -2,63 +2,10 @@
 // Jede Fertigkeit hat einen Generator gen(stufe) -> Aufgabe. Stufe 1 = leicht, 2 = mittel, 3 = Testniveau.
 import { parse, evaluate } from '../mathparse.js';
 
-// ---------- Hilfen ----------
-const R = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
-const RNZ = (a, b) => { let v; do v = R(a, b); while (v === 0); return v; };
-const pick = arr => arr[Math.floor(Math.random() * arr.length)];
-const shuffle = arr => { const a = [...arr]; for (let i = a.length - 1; i > 0; i--) { const j = R(0, i); [a[i], a[j]] = [a[j], a[i]]; } return a; };
-const gcd = (a, b) => { a = Math.abs(a); b = Math.abs(b); while (b) [a, b] = [b, a % b]; return a; };
-const lcm = (a, b) => Math.abs(a * b) / gcd(a, b);
-const fr = (n, d) => { if (d < 0) { n = -n; d = -d; } const g = gcd(n, d) || 1; return [n / g, d / g]; };
-const abs = Math.abs;
+import { binomDezimal, binomVorzeichen, pascal, binomFaktor, binomGleichung } from './mathe-binome.js';
+import { laplace, baumdiagramm } from './mathe-wahrscheinlichkeit.js';
+import { R, RNZ, pick, shuffle, gcd, lcm, fr, abs, sn, pn, op, opx, dec, money, fRaw, fD, fA, polyA, polyD, linA, linD, mxnD, mxnA, asciiToDisp, fill, Q } from './helpers.js';
 
-const sn = v => (v < 0 ? '−' + abs(v) : String(v));            // −5
-const pn = v => (v < 0 ? `(−${abs(v)})` : String(v));           // (−5)
-const op = v => (v < 0 ? ` − ${abs(v)}` : ` + ${v}`);           //  − 5 / + 5
-const opx = (v, x = 'x') => (v < 0 ? ` − ${v === -1 ? '' : abs(v)}${x}` : ` + ${v === 1 ? '' : v}${x}`);
-const dec = v => String(Math.round(v * 100) / 100).replace('.', ',');
-const money = v => (Number.isInteger(v) ? String(v) : (Math.round(v * 100) / 100).toFixed(2).replace('.', ',')) + ' €';
-
-const fRaw = (n, d) => (d === 1 ? sn(n) : `${n < 0 ? '−' : ''}\\f{${abs(n)}}{${d}}`);
-const fD = (n, d) => { const [a, b] = fr(n, d); return fRaw(a, b); };
-const fA = (n, d) => { const [a, b] = fr(n, d); return b === 1 ? `${a}` : `${a}/${b}`; };
-
-// Polynome: terms = [[koeff, 'x^2'], [koeff, 'x'], [koeff, '']]
-function polyA(terms) {
-  let s = '';
-  for (const [c, v] of terms) {
-    if (c === 0) continue;
-    const part = (v && abs(c) === 1 ? '' : String(abs(c))) + v;
-    s += s === '' ? (c < 0 ? '-' : '') + part : (c < 0 ? '-' : '+') + part;
-  }
-  return s || '0';
-}
-function polyD(terms) {
-  let s = '';
-  for (const [c, v] of terms) {
-    if (c === 0) continue;
-    const vd = v.replace('^2', '²');
-    const part = (v && abs(c) === 1 ? '' : String(abs(c))) + vd;
-    s += s === '' ? (c < 0 ? '−' : '') + part : (c < 0 ? ' − ' : ' + ') + part;
-  }
-  return s || '0';
-}
-const linA = (a, b, v = 'x') => polyA([[a, v], [b, '']]);
-const linD = (a, b, v = 'x') => polyD([[a, v], [b, '']]);
-// Term mit Bruch-Steigung anzeigen
-const mxnD = (mn, md, n) => {
-  const [p, q] = fr(mn, md);
-  let s = q === 1 ? (p === 1 ? 'x' : p === -1 ? '−x' : `${sn(p)}x`) : `${p < 0 ? '−' : ''}\\f{${abs(p)}}{${q}}x`;
-  if (p === 0) s = '';
-  if (n !== 0) s += s ? op(n) : sn(n);
-  return s || '0';
-};
-const mxnA = (mn, md, n) => { const [p, q] = fr(mn, md); return `(${p}/${q})*x+(${n})`; };
-
-const asciiToDisp = s => s.replace(/\*/g, ' · ').replace(/-/g, '−').replace(/\+/g, ' + ').replace(/\^2/g, '²').replace(/\^3/g, '³');
-const fill = (t, vals) => t.replace(/[A-K]/g, ch => vals[ch]);
-
-function Q(o) { return { diff: 1, ...o }; }
 
 // ===================================================================
 // BRÜCHE & VORZEICHEN
@@ -774,11 +721,13 @@ const prozentAenderung = {
 export const mathe = {
   id: 'mathe', name: 'Mathematik', short: 'Mathe', icon: '📐', color: '#8b5cf6',
   topics: [
-    { id: 'brueche', name: 'Brüche & Vorzeichen', icon: '🍰', skills: [bruchAdd, bruchMul, vorzeichen] },
-    { id: 'terme', name: 'Terme & binomische Formeln', icon: '🧩', skills: [zusammenfassen, klammer, ausmultiplizieren, binomisch, faktorisieren] },
+    { id: 'binome', name: 'Binomische Formeln & Pascal', icon: '🎀', current: true, skills: [binomisch, binomDezimal, binomVorzeichen, pascal, binomFaktor, binomGleichung] },
+    { id: 'wahrscheinlichkeit', name: 'Wahrscheinlichkeit', icon: '🎲', current: true, skills: [laplace, baumdiagramm] },
+    { id: 'terme', name: 'Terme & Klammern', icon: '🧩', skills: [zusammenfassen, klammer, ausmultiplizieren, faktorisieren] },
     { id: 'gleichungen', name: 'Lineare Gleichungen', icon: '⚖️', skills: [gleichungEinfach, gleichungSchritte, bruchgleichung, textgleichung] },
     { id: 'funktionen', name: 'Lineare Funktionen', icon: '📈', skills: [steigung, graphAblesen, funktionswert, geradengleichung, funktionAnwendung] },
     { id: 'lgs', name: 'Gleichungssysteme', icon: '🔗', skills: [lgs, lgsText] },
+    { id: 'brueche', name: 'Brüche & Vorzeichen (Wdh.)', icon: '🍰', skills: [bruchAdd, bruchMul, vorzeichen] },
     { id: 'prozent', name: 'Prozentrechnung (Wdh.)', icon: '🏷️', skills: [prozent, prozentAenderung] },
   ],
 };

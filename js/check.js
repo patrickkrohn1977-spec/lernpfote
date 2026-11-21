@@ -12,6 +12,11 @@ export const ERROR_TAGS = {
   prozent: 'Prozentrechnung',
   vertauscht: 'Werte vertauscht',
   vereinfachen: 'Nicht fertig vereinfacht',
+  quadrieren: 'Quadrieren (Dezimalzahlen/Brüche)',
+  pascal: 'Pascal’sches Dreieck',
+  runden: 'Runden',
+  pfadregel: 'Pfad-/Summenregel',
+  lesen: 'Aufgabe genau lesen',
   rechnen: 'Rechenfehler',
 };
 
@@ -39,8 +44,10 @@ function readNumber(input) {
 function checkNum(spec, input) {
   let r;
   try { r = readNumber(input); } catch (e) { return { status: 'invalid', msg: e.message }; }
-  const { v, t } = r;
-  if (near(v, spec.value, spec.tol)) {
+  let { v, t } = r;
+  let tol = spec.tol;
+  if (spec.prob && /%|prozent/i.test(String(input))) { v = v / 100; tol = Math.max(tol || 0, 0.0006); }
+  if (near(v, spec.value, tol)) {
     if (spec.reduced) {
       const m = t.match(/^-?\(?(-?\d+)\)?\/\(?(-?\d+)\)?$/);
       if (m && gcd(+m[1], +m[2]) > 1) return { status: 'almost', msg: 'Der Wert stimmt – aber kürze den Bruch noch vollständig!', tag: 'kuerzen' };
@@ -48,10 +55,10 @@ function checkNum(spec, input) {
     return { status: 'correct' };
   }
   for (const tr of spec.traps || []) {
-    if (tr.value !== undefined && near(v, tr.value, spec.tol)) return { status: 'wrong', msg: tr.hint, tag: tr.tag };
+    if (tr.value !== undefined && near(v, tr.value, tol)) return { status: 'wrong', msg: tr.hint, tag: tr.tag };
   }
-  if (spec.value !== 0 && near(v, -spec.value, spec.tol)) return { status: 'wrong', msg: 'Fast! Nur das Vorzeichen stimmt nicht. Prüfe Plus und Minus.', tag: 'vorzeichen' };
-  if (spec.tol && Math.abs(v - spec.value) < Math.max(spec.tol * 30, Math.abs(spec.value) * 0.01)) return { status: 'wrong', msg: 'Ganz knapp daneben – hast du richtig gerundet?', tag: 'rechnen' };
+  if (spec.value !== 0 && near(v, -spec.value, tol)) return { status: 'wrong', msg: 'Fast! Nur das Vorzeichen stimmt nicht. Prüfe Plus und Minus.', tag: 'vorzeichen' };
+  if (tol && Math.abs(v - spec.value) < Math.max(tol * 30, Math.abs(spec.value) * 0.01)) return { status: 'wrong', msg: 'Ganz knapp daneben – hast du richtig gerundet?', tag: 'rechnen' };
   return { status: 'wrong', tag: spec.tag || 'rechnen' };
 }
 

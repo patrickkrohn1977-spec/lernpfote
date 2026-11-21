@@ -10,7 +10,7 @@ export function normalize(s) {
     .replace(/,/g, '.')
     .replace(/\s+/g, '')
     .replace(/²/g, '^2')
-    .replace(/³/g, '^3')
+    .replace(/³/g, '^3').replace(/⁴/g, '^4').replace(/⁵/g, '^5').replace(/⁶/g, '^6').replace(/⁷/g, '^7')
     .replace(/\[/g, '(').replace(/\]/g, ')')
     .toLowerCase();
 }
@@ -137,9 +137,10 @@ export function countSummands(n) {
   return 1;
 }
 
+// Klammern, in denen eine Variable steht (Klammern um reine Zahlen wie (1/9) zählen nicht)
 export function hasParens(n) {
   if (!n) return false;
-  if (n.t === '()') return true;
+  if (n.t === '()') return vars(n.a).size > 0 || hasParens(n.a);
   return hasParens(n.a) || hasParens(n.b);
 }
 
