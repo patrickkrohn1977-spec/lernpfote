@@ -489,7 +489,7 @@ function renderTestForm() {
     <section class="card">
       <label class="field"><span>Fach</span><select id="subj">${Object.values(SUBJECTS).map(s => `<option value="${s.id}">${s.name}</option>`).join('')}</select></label>
       <label class="field"><span>Datum</span><input type="date" id="date" min="${min}" value="${t?.date || ''}"></label>
-      <div class="field"><span>Welche Themen kommen dran?</span>${sub.topics.map(tp => `<label class="check"><input type="checkbox" value="${tp.id}" ${!t || t.topics.includes(tp.id) ? '' : ''} ${t?.topics.includes(tp.id) ? 'checked' : ''}> ${tp.icon} ${esc(tp.name)}</label>`).join('')}<small class="muted">Nichts angekreuzt = alle Themen</small></div>
+      <div class="field"><span>Welche Themen kommen dran?</span>${sub.topics.map(tp => `<label class="check"><input type="checkbox" value="${tp.id}" ${(t ? t.topics.includes(tp.id) : tp.current) ? 'checked' : ''}> ${tp.icon} ${esc(tp.name)}${tp.current ? ' ⭐' : ''}</label>`).join('')}<small class="muted">⭐ = aktueller Stoff aus dem Hefter (schon angekreuzt) · Nichts angekreuzt = alle Themen</small></div>
       <label class="field"><span>Notiz (optional)</span><input id="note" maxlength="60" placeholder="z. B. Klassenarbeit Nr. 2" value="${esc(t?.note || '')}"></label>
       <button class="btn primary big" id="save">Speichern</button>
       ${t ? '<button class="btn danger" id="del">Test löschen</button>' : ''}
