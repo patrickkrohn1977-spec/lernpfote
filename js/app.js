@@ -3,6 +3,7 @@ import { SUBJECTS, COMING } from './subjects/index.js';
 import { checkAnswer, ERROR_TAGS } from './check.js';
 import { parse, toHTML } from './mathparse.js';
 import { catSVG } from './cat.js';
+import { renderPhotos } from './photos.js';
 
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -60,7 +61,7 @@ const nav = () => `<nav class="tabbar">${NAV.map(([id, ic, l]) => `<button data-
 function render() {
   const s = E.S;
   if (!s.profile) return renderSetup();
-  const scr = { home: renderHome, topics: renderTopics, topic: renderTopic, quiz: renderQuiz, summary: renderSummary, stand: renderStand, more: renderMore, test: renderTestForm }[ui.screen] || renderHome;
+  const scr = { home: renderHome, topics: renderTopics, topic: renderTopic, quiz: renderQuiz, summary: renderSummary, stand: renderStand, more: renderMore, test: renderTestForm, photos: () => renderPhotos({ app, esc, go, toast, nav, SUBJECTS, E }) }[ui.screen] || renderHome;
   scr();
   $$('[data-go]').forEach(b => b.onclick = () => go(b.dataset.go));
 }
@@ -141,6 +142,8 @@ function renderHome() {
     </section>
 
     ${gaps.length ? `<section class="card"><div class="eyebrow">Hier trainieren wir gezielt</div>${gaps.slice(0, 3).map(p => `<button class="skill-row" data-skill="${p.skill.id}"><span>⚠️ ${esc(p.skill.name)}</span><span class="pill" style="background:${barColor(E.stat(p.skill.id).m)}">${Math.round(E.stat(p.skill.id).m)}%</span></button>`).join('')}</section>` : ''}
+
+    <button class="btn soft" id="newstuff" data-go="photos" style="width:100%">📷 Neuer Stoff? Fotos an deine Eltern schicken</button>
 
     <section class="subjects">
       ${Object.values(SUBJECTS).map(sub => `<button class="subject" data-go="topics" style="--c:${sub.color}"><span>${sub.icon}</span>${sub.name}</button>`).join('')}
@@ -509,6 +512,7 @@ function renderTestForm() {
 function renderMore() {
   const s = E.S;
   app().innerHTML = `<main><h1>⚙️ Mehr</h1>
+    <section class="card"><div class="eyebrow">Neuer Stoff</div><p class="small muted">Fotos von Hefter oder Arbeitsblättern aufnehmen und an die Eltern schicken – daraus werden neue Aufgaben.</p><button class="btn" data-go="photos">📷 Fotos schicken</button></section>
     <section class="card"><div class="eyebrow">Tests</div>
       ${s.tests.length ? s.tests.slice().sort((a, b) => b.date.localeCompare(a.date)).map(t => `<button class="skill-row" data-edit="${t.id}"><span>${SUBJECTS[t.subject].icon} ${E.fmtDate(t.date)}${t.note ? ' · ' + esc(t.note) : ''}</span><span class="muted small">${t.grade ? 'Note ' + t.grade : E.daysUntil(t.date) >= 0 ? 'in ' + E.daysUntil(t.date) + ' T.' : 'vorbei'} ›</span></button>`).join('') : '<p class="small muted">Noch kein Test eingetragen.</p>'}
       <button class="btn" id="addtest">+ Test eintragen</button></section>
@@ -523,7 +527,7 @@ function renderMore() {
       <ol class="small"><li>Diese Seite in <b>Safari</b> öffnen</li><li>Unten (iPhone) bzw. oben (iPad) auf <b>Teilen</b> ⬆️ tippen</li><li><b>„Zum Home-Bildschirm“</b> wählen</li></ol>
       <p class="small muted">Tipp fürs iPad: Mit dem Apple Pencil kannst du direkt ins Antwortfeld schreiben (Scribble) und im ✏️ Notizblock rechnen.</p></section>
     <section class="card"><button class="btn danger" id="reset">Alles zurücksetzen</button></section>
-    <p class="tiny muted center">Lernpfote · Version 1.1</p>
+    <p class="tiny muted center">Lernpfote · Version 1.2</p>
   </main>${nav()}`;
   $('#addtest').onclick = () => go('test', { back: 'more' });
   $$('[data-edit]').forEach(b => b.onclick = () => go('test', { edit: b.dataset.edit, back: 'more' }));

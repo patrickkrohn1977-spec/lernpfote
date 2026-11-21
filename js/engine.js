@@ -1,5 +1,5 @@
 // Lern-Engine: Fortschritt, Lücken-Erkennung, adaptive Aufgabenauswahl, Belohnungen.
-import { SUBJECTS } from './subjects/index.js';
+import { SUBJECTS, PRESET_TESTS } from './subjects/index.js';
 import { ERROR_TAGS } from './check.js';
 
 const KEY = 'lernpfote_v1';
@@ -47,7 +47,22 @@ const fresh = () => ({
 export let S = fresh();
 export function load() {
   try { const raw = localStorage.getItem(KEY); if (raw) S = { ...fresh(), ...JSON.parse(raw) }; } catch {}
+  applyPresets();
   return S;
+}
+
+// Tests, die über ein App-Update vorgegeben werden (z. B. von den Eltern genannt).
+// Jeder wird nur einmal übernommen – löscht Amelie ihn, kommt er nicht wieder.
+function applyPresets() {
+  S.presetsSeen ||= [];
+  for (const t of PRESET_TESTS) {
+    if (S.presetsSeen.includes(t.id)) continue;
+    S.presetsSeen.push(t.id);
+    if (daysUntil(t.date) < 0) continue;
+    if (S.tests.some(x => x.subject === t.subject && x.date === t.date)) continue;
+    S.tests.push({ ...t, topics: [...t.topics] });
+  }
+  save();
 }
 export function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch {} }
 export function resetAll() { S = fresh(); save(); }
