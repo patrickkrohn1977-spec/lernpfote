@@ -1,5 +1,5 @@
 // Lern-Engine: Fortschritt, Lücken-Erkennung, adaptive Aufgabenauswahl, Belohnungen.
-import { SUBJECTS, PRESET_TESTS } from './subjects/index.js';
+import { SUBJECTS, PRESET_TESTS, TEST_PATCHES } from './subjects/index.js';
 import { ERROR_TAGS } from './check.js';
 
 const KEY = 'lernpfote_v1';
@@ -61,6 +61,15 @@ function applyPresets() {
     if (daysUntil(t.date) < 0) continue;
     if (S.tests.some(x => x.subject === t.subject && x.date === t.date)) continue;
     S.tests.push({ ...t, topics: [...t.topics] });
+  }
+  for (const pt of TEST_PATCHES) {
+    if (S.presetsSeen.includes(pt.id)) continue;
+    S.presetsSeen.push(pt.id);
+    for (const t of S.tests) {
+      // nur Tests mit ausgewählten Themen ergänzen (leere Liste = ohnehin alle Themen)
+      if (t.subject === pt.subject && t.date === pt.date && t.topics?.length)
+        for (const id of pt.addTopics) if (!t.topics.includes(id)) t.topics.push(id);
+    }
   }
   save();
 }

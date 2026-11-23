@@ -4,6 +4,7 @@ import { parse, evaluate } from '../mathparse.js';
 
 import { binomDezimal, binomVorzeichen, pascal, binomFaktor, binomGleichung } from './mathe-binome.js';
 import { laplace, baumdiagramm } from './mathe-wahrscheinlichkeit.js';
+import { termDarstellung, beweis } from './mathe-beweise.js';
 import { R, RNZ, pick, shuffle, gcd, lcm, fr, abs, sn, pn, op, opx, dec, money, fRaw, fD, fA, polyA, polyD, linA, linD, mxnD, mxnA, asciiToDisp, fill, Q } from './helpers.js';
 
 
@@ -722,6 +723,7 @@ export const mathe = {
   id: 'mathe', name: 'Mathematik', short: 'Mathe', icon: '📐', color: '#8b5cf6',
   topics: [
     { id: 'binome', name: 'Binomische Formeln & Pascal', icon: '🎀', current: true, skills: [binomisch, binomDezimal, binomVorzeichen, pascal, binomFaktor, binomGleichung] },
+    { id: 'beweise', name: 'Arithmetische Beweise', icon: '🔍', current: true, skills: [termDarstellung, beweis] },
     { id: 'wahrscheinlichkeit', name: 'Wahrscheinlichkeit', icon: '🎲', current: true, skills: [laplace, baumdiagramm] },
     { id: 'terme', name: 'Terme & Klammern', icon: '🧩', skills: [zusammenfassen, klammer, ausmultiplizieren, faktorisieren] },
     { id: 'gleichungen', name: 'Lineare Gleichungen', icon: '⚖️', skills: [gleichungEinfach, gleichungSchritte, bruchgleichung, textgleichung] },

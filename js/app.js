@@ -245,7 +245,7 @@ function inputHTML(spec) {
   if (a.type === 'pair') {
     return `<div class="pair">${a.fields.map((f, i) => `<label><span>${esc(f.label)} =</span><input class="ans" data-i="${i}" inputmode="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"></label>`).join('')}</div>${kb}`;
   }
-  return `<div class="ans-wrap"><input class="ans" data-i="0" inputmode="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="${isTerm ? 'z. B. 3x² − 2x + 1' : 'z. B. 3/4 oder −2,5'}"></div>
+  return `<div class="ans-wrap"><input class="ans" data-i="0" inputmode="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="${isTerm ? `z. B. 3${vs[0] || 'x'}² − 2${vs[0] || 'x'} + 1` : 'z. B. 3/4 oder −2,5'}"></div>
     <div class="preview" id="preview"></div>${kb}`;
 }
 
@@ -527,7 +527,7 @@ function renderMore() {
       <ol class="small"><li>Diese Seite in <b>Safari</b> öffnen</li><li>Unten (iPhone) bzw. oben (iPad) auf <b>Teilen</b> ⬆️ tippen</li><li><b>„Zum Home-Bildschirm“</b> wählen</li></ol>
       <p class="small muted">Tipp fürs iPad: Mit dem Apple Pencil kannst du direkt ins Antwortfeld schreiben (Scribble) und im ✏️ Notizblock rechnen.</p></section>
     <section class="card"><button class="btn danger" id="reset">Alles zurücksetzen</button></section>
-    <p class="tiny muted center">Lernpfote · Version 1.2</p>
+    <p class="tiny muted center">Lernpfote · Version 1.3</p>
   </main>${nav()}`;
   $('#addtest').onclick = () => go('test', { back: 'more' });
   $$('[data-edit]').forEach(b => b.onclick = () => go('test', { edit: b.dataset.edit, back: 'more' }));

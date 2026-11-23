@@ -17,6 +17,7 @@ export const ERROR_TAGS = {
   runden: 'Runden',
   pfadregel: 'Pfad-/Summenregel',
   lesen: 'Aufgabe genau lesen',
+  beweis: 'Beweise / Terme aufstellen',
   rechnen: 'Rechenfehler',
 };
 
@@ -67,7 +68,8 @@ function checkTerm(spec, input) {
   const t = stripPrefix(input);
   try { ast = parse(t); } catch (e) { return { status: 'invalid', msg: e.message }; }
   if (normalize(input).includes('=') && !/^[a-z](\([a-z]\))?=/.test(normalize(input))) return { status: 'invalid', msg: 'Bitte nur den Term eingeben (ohne Gleichheitszeichen).' };
-  const target = parse(spec.value);
+  let target = parse(spec.value);
+  for (const alt of spec.alts || []) { const a = parse(alt); if (equivalent(ast, a)) { target = a; break; } }
   if (!equivalent(ast, target)) {
     for (const tr of spec.traps || []) {
       if (tr.expr && equivalent(ast, parse(tr.expr))) return { status: 'wrong', msg: tr.hint, tag: tr.tag };
@@ -83,6 +85,14 @@ function checkTerm(spec, input) {
   if (form === 'noParens' && hasParens(ast)) return { status: 'almost', msg: 'Gleichwertig – aber die Klammer sollte aufgelöst sein.', tag: 'vereinfachen' };
   if (form === 'linear') {
     if (/\([^)]*[a-z]/.test(normalize(t)) || countSummands(ast) > 2) return { status: 'almost', msg: 'Stimmt – aber schreibe es in der Form y = mx + n.', tag: 'vereinfachen' };
+  }
+  if (form === 'proof') {
+    const ok = proofShape(ast, spec.proof);
+    if (!ok) {
+      const pr = spec.proof;
+      const want = pr === 'square' ? '(…)²' : pr.r ? `${pr.k} · (…) + ${pr.r}` : `${pr.k} · (…)`;
+      return { status: 'almost', msg: `Der Term stimmt – aber man sieht die Aussage noch nicht. Schreibe ihn in der Form ${want} (ausklammern!).`, tag: 'beweis' };
+    }
   }
   if (form === 'factored') {
     if (!isProductWithBracket(ast)) return { status: 'almost', msg: 'Gleichwertig – aber gesucht ist ein Produkt mit Klammer (ausklammern!).', tag: 'vereinfachen' };
@@ -122,6 +132,31 @@ function checkPair(spec, inputs) {
   if (signOnly) return { status: 'wrong', msg: `Bei ${names} stimmt das Vorzeichen nicht.`, tag: 'vorzeichen' };
   if (wrongIdx.length < exp.length) return { status: 'wrong', msg: `${names} stimmt noch nicht – der Rest ist richtig.`, tag: spec.tag || 'rechnen' };
   return { status: 'wrong', tag: spec.tag || 'rechnen' };
+}
+
+// Ist der Term in Beweis-Form? {k, r}: k·(…) + r   |  'square': (…)²
+function intValued(node) {
+  const vs = [...vars(node)];
+  for (let i = 0; i < 6; i++) {
+    const env = {}; vs.forEach((v, j) => { env[v] = ((i * 3 + j * 5) % 9) - 3; });
+    let x; try { x = evaluate(node, env); } catch { return false; }
+    if (Math.abs(x - Math.round(x)) > 1e-9) return false;
+  }
+  return true;
+}
+function multipleOf(node, k) {
+  const fs = factors(node);
+  const nums = fs.filter(f => f.t === 'n'), rest = fs.filter(f => f.t !== 'n');
+  const c = nums.reduce((a, f) => a * f.v, 1);
+  if (!Number.isInteger(c) || c % k !== 0 || !rest.length) return false;
+  return rest.every(intValued);
+}
+function proofShape(ast, pr) {
+  if (pr === 'square') return ast.t === '^' && ast.b.t === 'n' && ast.b.v === 2 && intValued(ast.a);
+  if (!pr.r) return multipleOf(ast, pr.k);
+  if (ast.t === '+' && ast.b.t === 'n' && ast.b.v === pr.r) return multipleOf(ast.a, pr.k);
+  if (ast.t === '+' && ast.a.t === 'n' && ast.a.v === pr.r) return multipleOf(ast.b, pr.k);
+  return false;
 }
 
 export function checkAnswer(spec, input) {
